@@ -64,8 +64,8 @@ export default class TodoList extends React.Component {
     // AsyncStorage.getItem("todolist").then(response =>
     //   this.setState({ todolist: JSON.parse(response) || todolist })
     // );
-    const uid = firebase.auth().currentUser.uid;
-    //const uid = "Fq1m5IHnZePsbbu19qzAaqAvmFm2";
+    // const uid = firebase.auth().currentUser.uid;
+    const uid = "Fq1m5IHnZePsbbu19qzAaqAvmFm2";
     console.log(uid);
     this.uid = uid;
     if (uid) {
@@ -144,7 +144,7 @@ export default class TodoList extends React.Component {
       let currentTodo = this.state.todolist[i];
       if ( currentTodo == item) {
         currentTodo.done = !currentTodo.done;
-      } 
+      }
       newTodolist.push(currentTodo)
     } */
 
