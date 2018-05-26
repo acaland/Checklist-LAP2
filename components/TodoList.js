@@ -10,6 +10,7 @@ import {
 
 import { Ionicons } from "@expo/vector-icons";
 import * as firebase from "firebase";
+import uuid from "uuid";
 
 //alert(firebase.auth().currentUser);
 
@@ -64,8 +65,8 @@ export default class TodoList extends React.Component {
     // AsyncStorage.getItem("todolist").then(response =>
     //   this.setState({ todolist: JSON.parse(response) || todolist })
     // );
-    // const uid = firebase.auth().currentUser.uid;
-    const uid = "Fq1m5IHnZePsbbu19qzAaqAvmFm2";
+    const uid = firebase.auth().currentUser.uid;
+    //const uid = "Fq1m5IHnZePsbbu19qzAaqAvmFm2";
     console.log(uid);
     this.uid = uid;
     if (uid) {
@@ -166,11 +167,27 @@ export default class TodoList extends React.Component {
     //this._update(newTodolist);
   };
 
-  _add = todo => {
+  _add = async todo => {
     //this.setState({ todolist: [...this.state.todolist, todo] }, this._update );
     let newTodolist = [...this.state.todolist, todo];
     //this._update(newTodolist);
     // todo.title = todo.text;
+    // if (todo.image) {
+    //   const response = await fetch(todo.image);
+    //   const blob = await response.blob();
+    //   const ref = firebase
+    //     .storage()
+    //     .ref()
+    //     .child(this.uid + "/" + uuid.v4());
+    //   console.log(ref);
+    //   const uploadStatus = await ref.put(blob);
+    //   // console.log(uploadStatus);
+    //   var downloadURL = await uploadStatus.ref.getDownloadURL();
+    //   console.log(downloadURL);
+    //   todo.imageURL = downloadURL;
+    //   delete todo.image;
+    // }
+
     firebase
       .database()
       .ref("users/" + this.uid + "/todolist/")

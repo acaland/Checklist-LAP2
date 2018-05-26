@@ -10,13 +10,22 @@ import {
   Image,
   TouchableOpacity,
   ScrollView,
-  ActionSheetIOS
+  ActionSheetIOS,
+  ActivityIndicator
 } from "react-native";
-import { MapView, ImagePicker, Permissions, Location } from "expo";
+import {
+  MapView,
+  ImagePicker,
+  Permissions,
+  Location,
+  ImageManipulator
+} from "expo";
 
 const TINT_COLOR = "rgb(4, 159, 239)";
 
 import DueDate from "./DueDate";
+import * as firebase from "firebase";
+import uuid from "uuid";
 
 export default class AddTodo extends React.Component {
   state = {
@@ -38,11 +47,35 @@ export default class AddTodo extends React.Component {
     let item = params ? params.currentTodo : null;
 
     if (item) {
-      this.setState({ ...item, dueDate: new Date(item.dueDate) });
+      // if (item.imageURL) {
+      //   item.image = item.imageURL;
+      // }
+      this.setState({
+        ...item,
+        dueDate: new Date(item.dueDate)
+      });
     }
   }
 
-  _save = () => {
+  _uploadImage = async localURI => {
+    this.props.navigation.setParams({ isUploading: true });
+    const uid = firebase.auth().currentUser.uid;
+    const response = await fetch(localURI);
+    const blob = await response.blob();
+    const ref = firebase
+      .storage()
+      .ref()
+      .child(uid + "/" + uuid.v4());
+    //console.log(ref);
+    const uploadStatus = await ref.put(blob);
+    // console.log(uploadStatus);
+    const downloadURL = await uploadStatus.ref.getDownloadURL();
+    //console.log(downloadURL);
+    this.props.navigation.setParams({ isUploading: false });
+    return downloadURL;
+  };
+
+  _save = async () => {
     // verificare se dobbiamo aggiungere una nuova todo o aggiornare una esistente
     const onSaveEdit = this.props.navigation.state.params.onSaveEdit;
     if (onSaveEdit) {
@@ -55,6 +88,10 @@ export default class AddTodo extends React.Component {
         ...this.state,
         dueDate: this.state.dueDate.toISOString()
       };
+      // check if the image has been updated
+      if (this.state.image && this.state.image.startsWith("file://")) {
+        updatedTodo.image = await this._uploadImage(this.state.image);
+      }
       onSaveEdit(updatedTodo);
       this.props.navigation.goBack();
       return;
@@ -63,12 +100,22 @@ export default class AddTodo extends React.Component {
     const onAdd = this.props.navigation.state.params.onAdd;
     if (onAdd) {
       console.log(typeof this.state.dueDate, this.state.dueDate);
+
       const newTodo = {
         text: this.state.text,
         done: false,
         dueDate: this.state.dueDate.toISOString(),
-        shouldRemind: this.state.shouldRemind
+        shouldRemind: this.state.shouldRemind,
+        location: {
+          latitude: this.state.location.latitude,
+          longitude: this.state.location.longitude
+        },
+        //image: this.state.image,
+        address: this.state.address
       };
+      if (this.state.image) {
+        newTodo.image = await this._uploadImage(this.state.image);
+      }
       onAdd(newTodo);
       this.props.navigation.goBack();
     }
@@ -88,7 +135,14 @@ export default class AddTodo extends React.Component {
     let result = await ImagePicker.launchImageLibraryAsync();
     if (!result.cancelled) {
       console.log(result);
-      this.setState({ image: result.uri });
+      // Resize the image
+      const manipResult = await ImageManipulator.manipulate(
+        result.uri,
+        [{ resize: { width: 375 } }],
+        { format: "png" }
+      );
+      console.log(manipResult);
+      this.setState({ image: manipResult.uri });
     }
   };
 
@@ -236,7 +290,13 @@ export default class AddTodo extends React.Component {
 AddTodo.navigationOptions = ({ navigation }) => ({
   title: "Add Todo",
   headerLeft: <Button title="Cancel" onPress={() => navigation.goBack()} />,
-  headerRight: (
+  headerRight: navigation.state.params.isUploading ? (
+    <ActivityIndicator
+      size="small"
+      color={TINT_COLOR}
+      style={{ marginRight: 20 }}
+    />
+  ) : (
     <TouchableOpacity onPress={() => navigation.state.params.onSave()}>
       <Text style={styles.headerBtn}>
         {Platform.OS === "ios" ? "Save" : "SAVE"}

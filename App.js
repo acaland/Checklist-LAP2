@@ -28,7 +28,7 @@ const App = StackNavigator(
     }
   },
   {
-    initialRouteName: "AddTodo"
+    initialRouteName: "Login"
     // mode: "modal"
   }
 );
